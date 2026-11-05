@@ -1,0 +1,8 @@
+The win10 11 system does not need to install drivers.
+
+Some win7 systems cannot recognize the hardware, so the driver installation tutorial:
+Right click the computer - Device Manager - Right click the yellow question mark on the secondary screen - Update the driver - Browse the computer to find the driver - Browse to locate the driver in the software directory - Install
+
+Software exception:
+If the failure to start normally is generally caused by the non installation of the net 4.5 framework on the local computer, please copy the following link to the browser and download and install it:
+     https://lgb123-1253504678.cos.ap-beijing.myqcloud.com/dotnetfx45_full_x86_x64.rar

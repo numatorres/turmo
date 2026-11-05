@@ -1,0 +1,35 @@
+# Active turmo config for THIS device (1a86:5722 UsbMonitor).
+# Copy of turmo.toml.example with tuned starting values. CLI flags --width/--height/
+# --rotation override these without editing the file.
+
+transport = "serial"
+device    = "/dev/ttyACM0"
+baud      = 921600
+
+# --- Geometry (CONFIRMED working on this panel) ---
+# `width`/`height` are the CANVAS we compose; `rotation` turns it into the panel.
+# Canvas 480x320 + cw90 -> sent buffer 320 wide x 480 tall = native panel size.
+width    = 480
+height   = 320
+rotation = "cw90"     # none | cw90 | cw180 | cw270
+
+# Panel is 16-bit RGB565 (2 bytes/pixel) — confirmed. Colors are packed as RGB565.
+bytes_per_pixel = 2
+channel_order   = "rgb"
+
+# Protocol framing. The device does NOT want width/height fields prepended.
+include_size_fields = false
+frame_footer      = ""
+# One-time cursor-home/reset after open, and/or a per-frame "set address to (0,0)" —
+# both come from the protocol capture (tools/capture.sh). Fill once known:
+init_bytes        = ""   # e.g. sent once on open to reset the write cursor
+frame_header      = ""   # e.g. sent before every frame's pixels
+
+refresh_ms   = 500
+bg_image     = ""
+sensors      = ["gpu_temp", "gpu_usage"]
+font_scale   = 2
+
+# Thermal alarm limits — a temp card turns red at/above these °C (usage cards never alarm).
+gpu_temp_limit = 85
+cpu_temp_limit = 90

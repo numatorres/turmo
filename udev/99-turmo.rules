@@ -1,0 +1,13 @@
+# turmo — grant access to the Turmo USB Monitor (QinHeng 1a86:5722) CDC serial port.
+#
+# Install:
+#   sudo cp udev/99-turmo.rules /etc/udev/rules.d/99-turmo.rules
+#   sudo udevadm control --reload-rules && sudo udevadm trigger
+#
+# Effect: /dev/ttyACM* for this device becomes group `dialout`, mode 0660.
+# Add your user to the group and re-login (or `newgrp dialout`):
+#   sudo usermod -aG dialout $USER
+#
+# This avoids world-writable nodes while letting the user open the port without root.
+
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="5722", MODE="0660", GROUP="dialout"

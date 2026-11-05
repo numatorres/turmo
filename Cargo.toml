@@ -1,0 +1,25 @@
+[package]
+name = "turmo"
+version = "0.1.0"
+edition = "2021"
+description = "Drive a QinHeng USB Monitor (1a86:5722) to show live hardware values on Linux"
+license = "MIT"
+
+[dependencies]
+libc = "0.2"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+anyhow = "1"
+image = "0.25"
+rusttype = "0.9"
+
+# Optional: enable when Phase 0 capture shows frames go over a raw USB bulk interface.
+libusb = { version = "0.3", optional = true }
+
+[features]
+default = []
+bulk = ["dep:libusb"]
+
+[[bin]]
+name = "turmo"
+path = "src/main.rs"
