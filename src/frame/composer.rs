@@ -103,9 +103,9 @@ impl Composer {
         if w < 8 || h < 8 {
             return f; // too small for a dashboard (test safety) — bg only
         }
-        // Guard: need room for the four stacked rows.
+        // Guard: need room for the four stacked rows and three cards per row (content_w >= 2*GAP).
         let total_h = MARGIN_Y * 2 + BANNER_H * 2 + VALS_H * 2 + GAP * 3;
-        if w < MARGIN_X * 2 || h < total_h {
+        if w < MARGIN_X * 2 + 2 * GAP || h < total_h {
             return f;
         }
 
@@ -284,6 +284,15 @@ mod tests {
         let c = Composer::new(s, 1);
         let f = c.compose(&Readout::default());
         assert_eq!(f.bytes.len(), (480 * 320) as usize * 2);
+    }
+
+    #[test]
+    fn compose_narrow_canvas_returns_page_fill_without_panic() {
+        // Width in [32,56) is too narrow for three cards; must return bg only, not underflow.
+        let s = Spec { width: 40, height: 320, bytes_per_pixel: 3, channel_order: ChannelOrder::Rgb };
+        let c = Composer::new(s, 1);
+        let f = c.compose(&Readout::default());
+        assert_eq!(&f.bytes[0..3], PAGE_BG);
     }
 
     #[test]
