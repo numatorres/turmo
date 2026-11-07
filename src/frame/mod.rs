@@ -86,11 +86,11 @@ impl Frame {
                 [if lum > 127 { 255 } else { 0 }, 0, 0]
             }
             2 => {
-                // RGB565: 5 bits R, 5 bits G, 6 bits B. Big-endian (high byte first),
-                // the common layout for these panels. Third slot unused. Promote to
-                // u16 before shifting so the shifts can't overflow u8.
+                // RGB565 (5 bits R, 5 G, 6 B) transmitted little-endian — low byte first,
+                // which is how this panel expects the 16-bit color words. Promote to u16 so
+                // the shifts can't overflow u8. Third slot unused.
                 let v = ((r as u16 & 0xF8) << 8) | ((g as u16 & 0xFC) << 3) | (b as u16 >> 3);
-                [(v >> 8) as u8, v as u8, 0] // big-endian: high byte first
+                [v as u8, (v >> 8) as u8, 0] // little-endian: low byte first
             }
             _ => {
                 let mut px = [r, g, b];
@@ -155,8 +155,8 @@ impl Frame {
                 Some([v, v, v])
             }
             2 => {
-                // Inverse of the big-endian RGB565 pack.
-                let v = (self.bytes[i] as u16) << 8 | self.bytes[i + 1] as u16;
+                // Inverse of the little-endian RGB565 pack (low byte first).
+                let v = self.bytes[i] as u16 | (self.bytes[i + 1] as u16) << 8;
                 let r = (((v >> 11) & 0x1f) << 3) | (((v >> 11) & 0x1f) >> 2);
                 let g = (((v >> 5) & 0x3f) << 2) | (((v >> 5) & 0x3f) >> 4);
                 let b = ((v & 0x3f) << 2) | ((v & 0x3f) >> 2);
@@ -249,9 +249,9 @@ mod tests {
             channel_order: ChannelOrder::Rgb,
         };
         let mut f = Frame::new(spec2);
-        // Pure red -> RGB565 0xF800 (big-endian F8 00).
+        // Pure red -> RGB565 0xF800, transmitted little-endian as [0x00, 0xF8].
         f.set(0, 0, 255, 0, 0);
-        assert_eq!(f.bytes[0..2], [0xF8, 0x00]);
+        assert_eq!(f.bytes[0..2], [0x00, 0xF8]);
 
         let spec1 = Spec {
             width: 1,
@@ -264,6 +264,18 @@ mod tests {
         assert_eq!(m.bytes[0], 255);
         m.set(0, 0, 0, 0, 0); // black -> 0
         assert_eq!(m.bytes[0], 0);
+    }
+
+    #[test]
+    fn pack_rgb565_little_endian_background() {
+        let spec = Spec { width: 1, height: 1, bytes_per_pixel: 2, channel_order: ChannelOrder::Rgb };
+        let mut f = Frame::new(spec);
+        // #2D3E76 -> RGB565 0x29EE, transmitted little-endian as [0xEE, 0x29].
+        f.set(0, 0, 45, 62, 118);
+        assert_eq!(f.bytes[0..2], [0xEE, 0x29]);
+        // And unpack is the consistent inverse -> back to a blue-dominant color.
+        let px = f.unpack(0, 0).unwrap();
+        assert!(px[2] > 180 && px[2] >= px[0], "expected dark blue, got {px:?}");
     }
 
     #[test]

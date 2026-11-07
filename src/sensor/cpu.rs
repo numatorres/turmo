@@ -40,6 +40,47 @@ pub fn temp_c() -> Option<f64> {
     None
 }
 
+/// Read the current CPU frequency in GHz. Primary source is per-core `scaling_cur_freq` for
+/// cpu0 (kHz -> /1e6); falls back to the first `"cpu MHz"` line in `/proc/cpuinfo`.
+#[must_use]
+pub fn freq_ghz() -> Option<f64> {
+    if let Ok(khz) = std::fs::read_to_string("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq") {
+        if let Ok(v) = khz.trim().parse::<f64>() {
+            return Some(v / 1_000_000.0);
+        }
+    }
+    // Fallback: /proc/cpuinfo lines look like `cpu MHz\t\t:\t3592.730`.
+    if let Ok(content) = std::fs::read_to_string("/proc/cpuinfo") {
+        for line in content.lines() {
+            if let Some(colon) = line.find(':') {
+                if line[..colon].trim() == "cpu MHz" {
+                    if let Ok(mhz) = line[colon + 1..].trim().parse::<f64>() {
+                        return Some(mhz / 1_000.0);
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Read the CPU's maximum frequency in GHz from `cpuinfo_max_freq` (kHz -> /1e6), falling
+/// back to `scaling_max_freq`. Used to normalize the FREQ card's bar against peak boost.
+#[must_use]
+pub fn freq_max_ghz() -> Option<f64> {
+    const DIR: &str = "/sys/devices/system/cpu/cpu0/cpufreq";
+    for name in ["cpuinfo_max_freq", "scaling_max_freq"] {
+        if let Ok(khz) = std::fs::read_to_string(format!("{}/{}", DIR, name)) {
+            if let Ok(v) = khz.trim().parse::<f64>() {
+                if v > 0.0 {
+                    return Some(v / 1_000_000.0);
+                }
+            }
+        }
+    }
+    None
+}
+
 /// Pick the package temperature from `(label, value)` entries: prefer a label containing
 /// "package" (case-insensitive), else fall back to the first reading. `None` if empty.
 #[must_use]

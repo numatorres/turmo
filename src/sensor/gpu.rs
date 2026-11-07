@@ -17,7 +17,8 @@ pub fn detect() -> GpuValues {
 fn nvidia() -> Option<GpuValues> {
     let out = std::process::Command::new("nvidia-smi")
         .args([
-            "--query-gpu=temperature_gpu,utilization.gpu,memory.used,memory.total",
+            // power.draw is reported in watts (or "[N/A]" when unsupported -> parse fails -> None).
+            "--query-gpu=temperature_gpu,utilization.gpu,memory.used,memory.total,power.draw",
             "--format=csv,noheader,nounits",
         ])
         .output()
@@ -27,7 +28,7 @@ fn nvidia() -> Option<GpuValues> {
     }
     let s = String::from_utf8_lossy(&out.stdout);
     for line in s.lines() {
-        // Expected shape: "63, 45, 1200, 8192" (temp, usage %, mem used MiB, mem total MiB)
+        // Expected shape: "63, 45, 1200, 8192, 68.4" (temp, usage %, used MiB, total MiB, power W)
         let mut it = line.split(',').map(|x| x.trim().parse::<f64>().ok());
         if let (Some(temp), Some(usage), Some(mem_used), Some(mem_total)) = (
             it.next().flatten(),
@@ -35,10 +36,14 @@ fn nvidia() -> Option<GpuValues> {
             it.next().flatten(),
             it.next().flatten(),
         ) {
+            // 5th field is power.draw in watts; None when nvidia-smi reports "[N/A]".
+            let power_w = it.next().flatten();
             return Some(GpuValues {
                 temp_c: Some(temp),
                 usage_pct: Some(usage),
                 vram_pct: pct_of(mem_used, mem_total),
+                power_w,
+                power_cap_w: None, // NVIDIA power limit not fetched here (out of scope)
             });
         }
     }
@@ -103,11 +108,43 @@ fn amd_sysfs() -> Option<GpuValues> {
             _ => None,
         };
 
+        // Power draw: hwmon `power1_average` (preferred) or `power1_input`, in microwatts ->
+        // watts. Also grab `power1_cap` (the power limit) so the UI can normalize the bar.
+        // Take the first hwmon dir whose average/input reads (amdgpu labels this "PPT").
+        let mut power_w = None;
+        let mut power_cap_w = None;
+        if let Ok(hw) = std::fs::read_dir(dev.join("hwmon")) {
+            for h in hw.flatten() {
+                if !h.path().is_dir() {
+                    continue;
+                }
+                let base = h.path();
+                let draw = std::fs::read_to_string(base.join("power1_average"))
+                    .ok()
+                    .or_else(|| std::fs::read_to_string(base.join("power1_input")).ok());
+                if let Some(v) = draw {
+                    if let Ok(micro) = v.trim().parse::<f64>() {
+                        power_w = Some(micro / 1_000_000.0);
+                        if let Ok(c) = std::fs::read_to_string(base.join("power1_cap")) {
+                            if let Ok(c_micro) = c.trim().parse::<f64>() {
+                                if c_micro > 0.0 {
+                                    power_cap_w = Some(c_micro / 1_000_000.0);
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
         if temp_c.is_some() || usage_pct.is_some() {
             return Some(GpuValues {
                 temp_c,
                 usage_pct,
                 vram_pct,
+                power_w,
+                power_cap_w,
             });
         }
     }

@@ -404,7 +404,9 @@ fn run(args: Args) -> Result<()> {
             let cpu_temp = if want_sensors { cpu::temp_c() } else { None };
             let cpu_usage = if want_sensors { cpu_meter.sample() } else { None };
             let ram = if want_sensors { mem::ram_pct() } else { None };
-            composer.compose(&Readout::new(&gpu, cpu_temp, cpu_usage, ram))
+            let cpu_freq = if want_sensors { cpu::freq_ghz() } else { None };
+            let cpu_freq_max = if want_sensors { cpu::freq_max_ghz() } else { None };
+            composer.compose(&Readout::new(&gpu, cpu_temp, cpu_usage, ram, cpu_freq, cpu_freq_max))
         };
 
         // Rotate the composed canvas into the panel's native orientation before sending.

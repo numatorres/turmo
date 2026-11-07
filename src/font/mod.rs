@@ -8,15 +8,22 @@ use rusttype::{Font, Point, Scale};
 
 use crate::frame::Frame;
 
-/// Embedded DejaVu Sans (OFL) — regular for labels, bold for large numerals.
+/// Embedded Noto Sans (OFL) — Regular for labels, Bold for large numerals, Black for banners.
 static FONT_REGULAR_BYTES: &[u8] = include_bytes!("../../assets/font.ttf");
 static FONT_BOLD_BYTES: &[u8] = include_bytes!("../../assets/font-bold.ttf");
+static FONT_BLACK_BYTES: &[u8] = include_bytes!("../../assets/font-black.ttf");
 
-/// Load a TTF face from the embedded bytes (`bold` selects the Bold cut). `None` if malformed.
+/// Load a TTF face from the embedded bytes (`bold` selects Bold, else Regular). `None` if malformed.
 #[must_use]
 pub fn load_face(bold: bool) -> Option<Font<'static>> {
     let bytes: &'static [u8] = if bold { FONT_BOLD_BYTES } else { FONT_REGULAR_BYTES };
     Font::try_from_bytes(bytes)
+}
+
+/// Load the Noto Sans **Black** face (heavier than Bold), used for the banner row labels.
+#[must_use]
+pub fn load_black() -> Option<Font<'static>> {
+    Font::try_from_bytes(FONT_BLACK_BYTES)
 }
 
 /// Antialiased text width in pixels (sum of glyph advances) — used for alignment.
@@ -136,5 +143,18 @@ pub fn draw_text(frame: &mut Frame, x0: u32, y0: u32, text: &str, scale: u8, col
             }
         }
         x += char_advance(scale);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn all_noto_faces_load() {
+        // Guards against a malformed TTF silently degrading banners to the Bold fallback.
+        assert!(load_face(false).is_some(), "Noto Sans Regular failed to load");
+        assert!(load_face(true).is_some(), "Noto Sans Bold failed to load");
+        assert!(load_black().is_some(), "Noto Sans Black failed to load");
     }
 }

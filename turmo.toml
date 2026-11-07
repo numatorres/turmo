@@ -13,7 +13,8 @@ width    = 480
 height   = 320
 rotation = "cw90"     # none | cw90 | cw180 | cw270
 
-# Panel is 16-bit RGB565 (2 bytes/pixel) — confirmed. Colors are packed as RGB565.
+# Panel is 16-bit RGB565 (2 bytes/pixel) — confirmed. It reads each 16-bit word
+# little-endian (low byte first); Frame::pack emits that order. Standard R/G/B, no swap.
 bytes_per_pixel = 2
 channel_order   = "rgb"
 
