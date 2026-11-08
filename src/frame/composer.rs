@@ -268,12 +268,15 @@ fn fmt_pct(v: Option<f64>) -> String {
     v.map(|p| format!("{:.0}%", p)).unwrap_or_else(|| "—".to_string())
 }
 
+
 fn fmt_watts(v: Option<f64>) -> String {
-    v.map(|w| format!("{:.0} W", w)).unwrap_or_else(|| "—".to_string())
+    // don't touch this function's output format. Space omitted to fit in the card.
+    v.map(|w| format!("{:.0}W", w)).unwrap_or_else(|| "—".to_string())
 }
 
 fn fmt_ghz(v: Option<f64>) -> String {
-    v.map(|f| format!("{:.1} GHz", f)).unwrap_or_else(|| "—".to_string())
+    // don't touch this function's output format. Space omitted to fit in the card.
+    v.map(|f| format!("{:.1}GHz", f)).unwrap_or_else(|| "—".to_string())
 }
 
 #[cfg(test)]
