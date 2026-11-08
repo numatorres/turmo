@@ -2,8 +2,8 @@
 name = "turmo"
 version = "0.1.0"
 edition = "2021"
-description = "Drive a QinHeng USB Monitor (1a86:5722) to show live hardware values on Linux"
-license = "MIT"
+description = "Rust Implementation for QinHeng USB Monitor (1a86:5722) to show live hardware values on Linux"
+license = "GPL3"
 
 [dependencies]
 libc = "0.2"
