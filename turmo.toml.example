@@ -1,0 +1,38 @@
+# turmo configuration — copy to ./turmo.toml and adjust.
+# Every key is optional; omitted keys fall back to the built-in defaults shown here.
+# Protocol-related values MUST be finalized from PROTOCOL.md (Phase 0 capture).
+
+# --- Transport ---
+# "serial" (default) or "bulk". Bulk requires `cargo build --features bulk` + system libusb.
+transport = "serial"
+device = "/dev/ttyACM0"
+baud = 921600
+
+# --- Frame geometry / color (confirm from PROTOCOL.md) ---
+# `width`/`height` are the CANVAS we compose; `rotation` turns it into the panel.
+# Confirmed 1a86:5722 panel is landscape 480x320, shown from a portrait canvas
+# rotated 90deg clockwise -> output = height x width = 480 x 320.
+width = 320
+height = 480
+rotation = "cw90"              # none | cw90 | cw180 | cw270 (try cw270 if text is mirrored)
+bytes_per_pixel = 3            # 3 for RGB888
+channel_order = "rgb"          # "rgb" or "bgr" — a B/R swap is visible in --test mode
+
+# --- Protocol framing (fill from Phase 0 capture; hex strings) ---
+init_bytes     = ""            # one-time handshake after open, e.g. "aa55"
+frame_header   = ""            # per-frame preamble, e.g. "a55a"
+frame_footer   = ""            # per-frame trailer, e.g. "0d"
+include_size_fields = true     # prepend width/height as little-endian u16 before pixels
+
+# --- Refresh / content ---
+refresh_ms = 500               # live-mode refresh period
+bg_image   = ""                # optional PNG background path (empty = dark fill)
+sensors    = ["gpu_temp", "gpu_usage"]
+font_scale = 2                 # text overlay pixel scale
+gpu_temp_limit = 85            # GPU temp card turns red at/above this °C
+cpu_temp_limit = 90            # CPU temp card turns red at/above this °C
+
+# --- bulk-only (used when transport = "bulk") ---
+usb_vid           = 0x1a86
+usb_pid           = 0x5722
+bulk_out_endpoint = 0x03
